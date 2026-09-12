@@ -1,0 +1,328 @@
+// ============================================================================
+// Tournament Context — Stato globale del torneo con React Context + Reducer
+// ============================================================================
+
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  type ReactNode,
+} from 'react';
+import type {
+  Tournament,
+  Team,
+  TournamentFormat,
+} from '../models/types';
+import {
+  createTournament,
+  createPlayer,
+  generateRandomTeams,
+} from '../services/tournamentService';
+import { confirmMatchResult, resetMatchResult } from '../services/scoringService';
+import { calculateStandings } from '../services/standingsService';
+import { saveTournament, loadTournaments } from '../services/storageService';
+
+// --- Stato ---
+
+interface TournamentState {
+  /** Lista di tutti i tornei salvati */
+  tournaments: Tournament[];
+  /** Torneo attualmente attivo/in modifica */
+  currentTournament: Tournament | null;
+}
+
+const initialState: TournamentState = {
+  tournaments: [],
+  currentTournament: null,
+};
+
+// --- Azioni ---
+
+type TournamentAction =
+  | { type: 'LOAD_TOURNAMENTS'; payload: Tournament[] }
+  | { type: 'CREATE_TOURNAMENT'; payload: { name: string } }
+  | { type: 'SET_CURRENT_TOURNAMENT'; payload: Tournament | null }
+  | { type: 'UPDATE_TOURNAMENT'; payload: Tournament }
+  | { type: 'DELETE_TOURNAMENT'; payload: string }
+  | { type: 'ADD_PLAYER'; payload: { name: string } }
+  | { type: 'REMOVE_PLAYER'; payload: string }
+  | { type: 'UPDATE_PLAYER'; payload: { id: string; name: string } }
+  | { type: 'SET_TEAMS'; payload: Team[] }
+  | { type: 'GENERATE_RANDOM_TEAMS' }
+  | { type: 'SET_FORMAT'; payload: { format: TournamentFormat; rounds: number } }
+  | { type: 'UPDATE_CONFIG'; payload: Partial<Tournament['config']> }
+  | { type: 'CONFIRM_MATCH'; payload: { roundId: string; matchId: string; scoreA: number; scoreB: number } }
+  | { type: 'RESET_MATCH'; payload: { roundId: string; matchId: string } }
+  | { type: 'RECALCULATE_STANDINGS' }
+  | { type: 'START_TOURNAMENT' }
+  | { type: 'ADD_ROUND'; payload: Tournament['rounds'][0] };
+
+// --- Reducer ---
+
+function tournamentReducer(
+  state: TournamentState,
+  action: TournamentAction
+): TournamentState {
+  switch (action.type) {
+    case 'LOAD_TOURNAMENTS':
+      return { ...state, tournaments: action.payload };
+
+    case 'CREATE_TOURNAMENT': {
+      const tournament = createTournament(action.payload.name);
+      return {
+        ...state,
+        tournaments: [...state.tournaments, tournament],
+        currentTournament: tournament,
+      };
+    }
+
+    case 'SET_CURRENT_TOURNAMENT':
+      return { ...state, currentTournament: action.payload };
+
+    case 'UPDATE_TOURNAMENT': {
+      if (!state.currentTournament) return state;
+      const updated = action.payload;
+      return {
+        ...state,
+        currentTournament: updated,
+        tournaments: state.tournaments.map((t) =>
+          t.id === updated.id ? updated : t
+        ),
+      };
+    }
+
+    case 'DELETE_TOURNAMENT':
+      return {
+        ...state,
+        tournaments: state.tournaments.filter((t) => t.id !== action.payload),
+        currentTournament:
+          state.currentTournament?.id === action.payload
+            ? null
+            : state.currentTournament,
+      };
+
+    case 'ADD_PLAYER': {
+      if (!state.currentTournament) return state;
+      const newPlayer = createPlayer(action.payload.name);
+      const updated = {
+        ...state.currentTournament,
+        players: [...state.currentTournament.players, newPlayer],
+      };
+      return { ...state, currentTournament: updated };
+    }
+
+    case 'REMOVE_PLAYER': {
+      if (!state.currentTournament) return state;
+      const updated = {
+        ...state.currentTournament,
+        players: state.currentTournament.players.filter(
+          (p) => p.id !== action.payload
+        ),
+        // Rimuovi anche le coppie che includevano il giocatore
+        teams: state.currentTournament.teams.filter(
+          (t) => !t.playerIds.includes(action.payload)
+        ),
+      };
+      return { ...state, currentTournament: updated };
+    }
+
+    case 'UPDATE_PLAYER': {
+      if (!state.currentTournament) return state;
+      const updatedPlayers = state.currentTournament.players.map((p) =>
+        p.id === action.payload.id ? { ...p, name: action.payload.name } : p
+      );
+      // Aggiorna anche i nomi delle coppie
+      const updatedTeams = state.currentTournament.teams.map((team) => {
+        if (!team.playerIds.includes(action.payload.id)) return team;
+        const p1 = updatedPlayers.find((p) => p.id === team.playerIds[0]);
+        const p2 = updatedPlayers.find((p) => p.id === team.playerIds[1]);
+        return {
+          ...team,
+          name: `${p1?.name ?? '?'} / ${p2?.name ?? '?'}`,
+        };
+      });
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          players: updatedPlayers,
+          teams: updatedTeams,
+        },
+      };
+    }
+
+    case 'SET_TEAMS': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          teams: action.payload,
+        },
+      };
+    }
+
+    case 'GENERATE_RANDOM_TEAMS': {
+      if (!state.currentTournament) return state;
+      try {
+        const teams = generateRandomTeams(state.currentTournament.players);
+        return {
+          ...state,
+          currentTournament: {
+            ...state.currentTournament,
+            teams,
+          },
+        };
+      } catch {
+        return state;
+      }
+    }
+
+    case 'SET_FORMAT': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          config: {
+            ...state.currentTournament.config,
+            format: action.payload.format,
+            totalRounds: action.payload.rounds,
+          },
+        },
+      };
+    }
+
+    case 'UPDATE_CONFIG': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          config: {
+            ...state.currentTournament.config,
+            ...action.payload,
+          },
+        },
+      };
+    }
+
+    case 'CONFIRM_MATCH': {
+      if (!state.currentTournament) return state;
+      const updated = confirmMatchResult(
+        state.currentTournament,
+        action.payload.roundId,
+        action.payload.matchId,
+        action.payload.scoreA,
+        action.payload.scoreB
+      );
+      return {
+        ...state,
+        currentTournament: {
+          ...updated,
+          standings: calculateStandings(updated),
+        },
+      };
+    }
+
+    case 'RESET_MATCH': {
+      if (!state.currentTournament) return state;
+      const updated = resetMatchResult(
+        state.currentTournament,
+        action.payload.roundId,
+        action.payload.matchId
+      );
+      return {
+        ...state,
+        currentTournament: {
+          ...updated,
+          standings: calculateStandings(updated),
+        },
+      };
+    }
+
+    case 'RECALCULATE_STANDINGS': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          standings: calculateStandings(state.currentTournament),
+        },
+      };
+    }
+
+    case 'START_TOURNAMENT': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          status: 'in-progress',
+        },
+      };
+    }
+
+    case 'ADD_ROUND': {
+      if (!state.currentTournament) return state;
+      return {
+        ...state,
+        currentTournament: {
+          ...state.currentTournament,
+          rounds: [...state.currentTournament.rounds, action.payload],
+        },
+      };
+    }
+
+    default:
+      return state;
+  }
+}
+
+// --- Context ---
+
+interface TournamentContextValue {
+  state: TournamentState;
+  dispatch: React.Dispatch<TournamentAction>;
+}
+
+const TournamentContext = createContext<TournamentContextValue | null>(null);
+
+// --- Provider ---
+
+export function TournamentProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(tournamentReducer, initialState);
+
+  // Carica i tornei da localStorage all'avvio
+  useEffect(() => {
+    const tournaments = loadTournaments();
+    dispatch({ type: 'LOAD_TOURNAMENTS', payload: tournaments });
+  }, []);
+
+  // Auto-save su localStorage ogni volta che il torneo corrente cambia
+  useEffect(() => {
+    if (state.currentTournament) {
+      saveTournament(state.currentTournament);
+    }
+  }, [state.currentTournament]);
+
+  return (
+    <TournamentContext.Provider value={{ state, dispatch }}>
+      {children}
+    </TournamentContext.Provider>
+  );
+}
+
+// --- Hook ---
+
+/**
+ * Hook per accedere allo stato e al dispatch del torneo.
+ */
+export function useTournament() {
+  const context = useContext(TournamentContext);
+  if (!context) {
+    throw new Error('useTournament deve essere usato dentro un TournamentProvider');
+  }
+  return context;
+}
