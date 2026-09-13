@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "tsx src/algorithms/roundRobin.test.ts && tsx src/algorithms/swiss.test.ts && tsx src/algorithms/knockout.test.ts && tsx src/services/standingsService.test.ts && tsx src/services/prizeService.test.ts && tsx src/services/storageService.test.ts && tsx src/services/importExport.test.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -22,6 +23,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }
