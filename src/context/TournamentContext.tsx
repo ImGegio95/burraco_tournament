@@ -68,6 +68,7 @@ type TournamentAction =
   | { type: 'START_TOURNAMENT' }
   | { type: 'GENERATE_ROUNDS' }
   | { type: 'GENERATE_NEXT_ROUND' }
+  | { type: 'IMPORT_TOURNAMENT'; payload: Tournament }
   | { type: 'ADD_ROUND'; payload: Tournament['rounds'][0] };
 
 // --- Reducer ---
@@ -366,6 +367,20 @@ function tournamentReducer(
         };
       }
       return state;
+    }
+
+    case 'IMPORT_TOURNAMENT': {
+      const imported = action.payload;
+      saveTournament(imported);
+      setActiveTournament(imported.id);
+      const existing = state.tournaments.filter((t) => t.id !== imported.id);
+      const newTournaments = [imported, ...existing];
+      saveTournaments(newTournaments);
+      return {
+        ...state,
+        tournaments: newTournaments,
+        currentTournament: imported,
+      };
     }
 
     case 'ADD_ROUND': {

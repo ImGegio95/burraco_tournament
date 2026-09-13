@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { useTournament } from '../context/TournamentContext';
 import type { Match } from '../models/types';
 import MatchCard from '../components/MatchCard';
+import { downloadTournamentFile } from '../services/storageService';
 
 export default function TournamentPage() {
   const { state, dispatch } = useTournament();
@@ -94,6 +95,16 @@ export default function TournamentPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadTournamentFile(tournament)}
+            className="px-3.5 py-2.5 rounded-lg glass-card hover:bg-white/10 
+                       border border-white/10 text-slate-300 font-medium 
+                       transition-all cursor-pointer flex items-center gap-1.5 text-sm"
+            title="Scarica backup JSON del torneo"
+          >
+            <span>💾</span>
+            <span className="hidden sm:inline">Esporta JSON</span>
+          </button>
           <button
             onClick={() => navigate('/standings')}
             className="px-4 py-2.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 

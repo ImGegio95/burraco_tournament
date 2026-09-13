@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTournament } from '../context/TournamentContext';
+import { validateAndImportTournament } from '../services/storageService';
 
 export default function HomePage() {
   const { state, dispatch } = useTournament();
@@ -20,6 +21,31 @@ export default function HomePage() {
     // Il torneo viene impostato come corrente dal reducer
     // Navigheremo alla pagina di setup nella FASE 1
     navigate('/setup');
+  };
+
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const res = validateAndImportTournament(content);
+      if (res.success && res.tournament) {
+        dispatch({ type: 'IMPORT_TOURNAMENT', payload: res.tournament });
+        setImportError(null);
+        if (res.tournament.status === 'in-progress' || res.tournament.status === 'completed') {
+          navigate('/tournament');
+        } else {
+          navigate('/setup');
+        }
+      } else {
+        setImportError(res.error || 'Impossibile importare il torneo.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleOpen = (id: string) => {
@@ -57,20 +83,35 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Nuovo Torneo */}
-      <div className="flex justify-center">
+      {/* Nuovo Torneo & Importa */}
+      <div className="flex flex-col items-center justify-center gap-3">
         {!showNewForm ? (
-          <button
-            onClick={() => setShowNewForm(true)}
-            className="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold 
-                       rounded-xl text-lg transition-all duration-250 shadow-lg hover:shadow-xl 
-                       hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer"
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-2xl">+</span>
-              Nuovo Torneo
-            </span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <button
+              onClick={() => setShowNewForm(true)}
+              className="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold 
+                         rounded-xl text-lg transition-all duration-250 shadow-lg hover:shadow-xl 
+                         hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-2xl">+</span>
+                Nuovo Torneo
+              </span>
+            </button>
+
+            <label className="px-6 py-4 glass-card hover:bg-white/[0.1] text-slate-300 hover:text-white font-medium 
+                              rounded-xl text-base transition-all border border-white/10 active:scale-[0.98] 
+                              cursor-pointer flex items-center gap-2 shadow-md">
+              <span className="text-xl">📥</span>
+              <span>Importa JSON</span>
+              <input
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={handleFileImport}
+              />
+            </label>
+          </div>
         ) : (
           <div className="glass-card-light p-6 w-full max-w-md animate-slide-up">
             <h3 className="text-lg font-semibold mb-4">Crea Nuovo Torneo</h3>
@@ -103,6 +144,13 @@ export default function HomePage() {
                 Annulla
               </button>
             </div>
+          </div>
+        )}
+
+        {importError && (
+          <div className="p-3 bg-rose-500/20 border border-rose-500/30 rounded-lg text-rose-300 text-xs flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{importError}</span>
           </div>
         )}
       </div>

@@ -85,26 +85,79 @@ export function getActiveTournamentId(): string | null {
 }
 
 /**
- * Esporta un torneo come stringa JSON.
+ * Esporta un torneo come stringa JSON formattata.
  */
 export function exportTournamentJSON(tournament: Tournament): string {
   return JSON.stringify(tournament, null, 2);
 }
 
 /**
- * Importa un torneo da stringa JSON.
- * 
- * @returns Il torneo parsato o null se il JSON non è valido
+ * Avvia il download del file JSON del torneo nel browser.
+ */
+export function downloadTournamentFile(tournament: Tournament): void {
+  const json = exportTournamentJSON(tournament);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const sanitizeName = tournament.config.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/gi, '_')
+    .slice(0, 30);
+  const dateStr = new Date().toISOString().split('T')[0];
+  const filename = `burraco_${sanitizeName}_${dateStr}.json`;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Valida e importa un torneo da stringa JSON.
+ */
+export function validateAndImportTournament(json: string): {
+  success: boolean;
+  tournament?: Tournament;
+  error?: string;
+} {
+  try {
+    const data = JSON.parse(json);
+
+    if (!data || typeof data !== 'object') {
+      return { success: false, error: 'Il file selezionato non è un JSON valido.' };
+    }
+
+    if (!data.id || typeof data.id !== 'string') {
+      return { success: false, error: 'File non valido: campo "id" mancante.' };
+    }
+
+    if (!data.config || typeof data.config !== 'object' || !data.config.name) {
+      return { success: false, error: 'File non valido: configurazione torneo assente o incompleta.' };
+    }
+
+    if (!Array.isArray(data.players) || !Array.isArray(data.teams) || !Array.isArray(data.rounds)) {
+      return { success: false, error: 'File non valido: mancano le strutture dati di giocatori, coppie o round.' };
+    }
+
+    const tournament: Tournament = {
+      ...data,
+      version: data.version || 1,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, tournament };
+  } catch (err: any) {
+    return { success: false, error: `Errore nella lettura del file: ${err?.message || 'Formato errato'}` };
+  }
+}
+
+/**
+ * Importa un torneo da stringa JSON (compatibilità legacy).
  */
 export function importTournamentJSON(json: string): Tournament | null {
-  try {
-    const tournament = JSON.parse(json) as Tournament;
-    // Validazione base: verifica che abbia i campi essenziali
-    if (!tournament.id || !tournament.config || !tournament.players) {
-      return null;
-    }
-    return tournament;
-  } catch {
-    return null;
-  }
+  const res = validateAndImportTournament(json);
+  return res.success && res.tournament ? res.tournament : null;
 }
