@@ -31,6 +31,7 @@ import {
 } from '../services/storageService';
 import { generateAllRoundRobinRounds } from '../algorithms/roundRobin';
 import { generateSwissRound } from '../algorithms/swiss';
+import { generateKnockoutFirstRound, generateKnockoutNextRound } from '../algorithms/knockout';
 import { generateId } from '../utils/id';
 
 // --- Stato ---
@@ -300,6 +301,16 @@ function tournamentReducer(
             completed: false,
           },
         ];
+      } else if (state.currentTournament.config.format === 'knockout' && rounds.length === 0) {
+        const r1Matches = generateKnockoutFirstRound(state.currentTournament.teams);
+        rounds = [
+          {
+            id: generateId(),
+            number: 1,
+            matches: r1Matches,
+            completed: false,
+          },
+        ];
       }
       const updated: Tournament = {
         ...state.currentTournament,
@@ -322,6 +333,16 @@ function tournamentReducer(
         rounds = generateAllRoundRobinRounds(state.currentTournament);
       } else if (state.currentTournament.config.format === 'swiss' && rounds.length === 0) {
         const r1Matches = generateSwissRound(state.currentTournament, 1);
+        rounds = [
+          {
+            id: generateId(),
+            number: 1,
+            matches: r1Matches,
+            completed: false,
+          },
+        ];
+      } else if (state.currentTournament.config.format === 'knockout' && rounds.length === 0) {
+        const r1Matches = generateKnockoutFirstRound(state.currentTournament.teams);
         rounds = [
           {
             id: generateId(),
@@ -365,6 +386,28 @@ function tournamentReducer(
             standings: calculateStandings(updated),
           },
         };
+      } else if (tournament.config.format === 'knockout') {
+        const nextRoundNumber = tournament.rounds.length + 1;
+        const newMatches = generateKnockoutNextRound(tournament, nextRoundNumber);
+        if (newMatches.length > 0) {
+          const newRound = {
+            id: generateId(),
+            number: nextRoundNumber,
+            matches: newMatches,
+            completed: false,
+          };
+          const updated = {
+            ...tournament,
+            rounds: [...tournament.rounds, newRound],
+          };
+          return {
+            ...state,
+            currentTournament: {
+              ...updated,
+              standings: calculateStandings(updated),
+            },
+          };
+        }
       }
       return state;
     }

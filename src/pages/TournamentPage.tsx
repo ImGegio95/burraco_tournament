@@ -8,6 +8,7 @@ import { useTournament } from '../context/TournamentContext';
 import type { Match } from '../models/types';
 import MatchCard from '../components/MatchCard';
 import { downloadTournamentFile } from '../services/storageService';
+import { getKnockoutRoundName } from '../algorithms/knockout';
 
 export default function TournamentPage() {
   const { state, dispatch } = useTournament();
@@ -186,7 +187,11 @@ export default function TournamentPage() {
                         : 'bg-white/[0.05] text-slate-300 border border-white/10 hover:bg-white/[0.08]'
                     }`}
                 >
-                  <span>Round {r.number}</span>
+                  <span>
+                    {config.format === 'knockout'
+                      ? `${getKnockoutRoundName(r.matches.length)} (R${r.number})`
+                      : `Round ${r.number}`}
+                  </span>
                   {r.completed && <span className="text-xs">✓</span>}
                 </button>
               );
@@ -198,7 +203,11 @@ export default function TournamentPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm px-1">
                 <span className="font-semibold text-slate-300 flex items-center gap-2">
-                  <span>Partite Round {activeRound.number}</span>
+                  <span>
+                    {config.format === 'knockout'
+                      ? getKnockoutRoundName(activeRound.matches.length)
+                      : `Partite Round ${activeRound.number}`}
+                  </span>
                   <span className="text-xs font-normal text-slate-400">
                     ({activeRound.matches.length} incontri)
                   </span>
@@ -231,8 +240,8 @@ export default function TournamentPage() {
         </div>
       )}
 
-      {/* Azione Genera Prossimo Round per formule sequenziali (es. Swiss) */}
-      {config.format === 'swiss' &&
+      {/* Azione Genera Prossimo Round per formule sequenziali (Swiss & Knockout) */}
+      {(config.format === 'swiss' || config.format === 'knockout') &&
         rounds.length > 0 &&
         rounds.length < config.totalRounds && (
           <div className="glass-card p-4 border-emerald-500/30 bg-emerald-500/10 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -242,7 +251,7 @@ export default function TournamentPage() {
               </p>
               <p className="text-xs text-slate-300">
                 {rounds[rounds.length - 1].completed
-                  ? `Puoi ora generare gli accoppiamenti del Round ${rounds.length + 1} basati sulla classifica.`
+                  ? `Puoi ora generare il turno successivo con i vincitori qualificati.`
                   : `Completa tutti i risultati del Round ${rounds.length} per procedere.`}
               </p>
             </div>
@@ -254,7 +263,7 @@ export default function TournamentPage() {
               disabled={!rounds[rounds.length - 1].completed}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shadow-md shadow-emerald-600/20"
             >
-              Genera Round {rounds.length + 1} →
+              Genera Prossimo Turno →
             </button>
           </div>
         )}
