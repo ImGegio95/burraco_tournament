@@ -21,7 +21,14 @@ import {
 } from '../services/tournamentService';
 import { confirmMatchResult, resetMatchResult } from '../services/scoringService';
 import { calculateStandings } from '../services/standingsService';
-import { saveTournament, loadTournaments } from '../services/storageService';
+import {
+  saveTournament,
+  loadTournaments,
+  saveTournaments,
+  getActiveTournamentId,
+  setActiveTournament,
+  deleteTournament as deleteTournamentStorage,
+} from '../services/storageService';
 import { generateAllRoundRobinRounds } from '../algorithms/roundRobin';
 import { generateSwissRound } from '../algorithms/swiss';
 import { generateId } from '../utils/id';
@@ -70,24 +77,40 @@ function tournamentReducer(
   action: TournamentAction
 ): TournamentState {
   switch (action.type) {
-    case 'LOAD_TOURNAMENTS':
-      return { ...state, tournaments: action.payload };
+    case 'LOAD_TOURNAMENTS': {
+      const activeId = getActiveTournamentId();
+      const current =
+        action.payload.find((t) => t.id === activeId) ??
+        action.payload[0] ??
+        null;
+      return {
+        ...state,
+        tournaments: action.payload,
+        currentTournament: current,
+      };
+    }
 
     case 'CREATE_TOURNAMENT': {
       const tournament = createTournament(action.payload.name);
+      const newTournaments = [...state.tournaments, tournament];
+      saveTournaments(newTournaments);
+      setActiveTournament(tournament.id);
       return {
         ...state,
-        tournaments: [...state.tournaments, tournament],
+        tournaments: newTournaments,
         currentTournament: tournament,
       };
     }
 
-    case 'SET_CURRENT_TOURNAMENT':
+    case 'SET_CURRENT_TOURNAMENT': {
+      setActiveTournament(action.payload?.id ?? null);
       return { ...state, currentTournament: action.payload };
+    }
 
     case 'UPDATE_TOURNAMENT': {
       if (!state.currentTournament) return state;
       const updated = action.payload;
+      saveTournament(updated);
       return {
         ...state,
         currentTournament: updated,
@@ -97,15 +120,18 @@ function tournamentReducer(
       };
     }
 
-    case 'DELETE_TOURNAMENT':
+    case 'DELETE_TOURNAMENT': {
+      deleteTournamentStorage(action.payload);
+      const remaining = state.tournaments.filter((t) => t.id !== action.payload);
+      const isCurrent = state.currentTournament?.id === action.payload;
+      const nextCurrent = isCurrent ? (remaining[0] ?? null) : state.currentTournament;
+      setActiveTournament(nextCurrent?.id ?? null);
       return {
         ...state,
-        tournaments: state.tournaments.filter((t) => t.id !== action.payload),
-        currentTournament:
-          state.currentTournament?.id === action.payload
-            ? null
-            : state.currentTournament,
+        tournaments: remaining,
+        currentTournament: nextCurrent,
       };
+    }
 
     case 'ADD_PLAYER': {
       if (!state.currentTournament) return state;
