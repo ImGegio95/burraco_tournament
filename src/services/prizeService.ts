@@ -65,6 +65,16 @@ export function updatePrizeConfig(
 }
 
 /**
+ * Restituisce il premio associato a una determinata posizione in classifica.
+ */
+export function getPrizeForPosition(
+  distribution: Prize[],
+  position: number
+): Prize | undefined {
+  return distribution.find((p) => p.position === position && p.amount > 0);
+}
+
+/**
  * Formatta un importo in euro.
  */
 export function formatCurrency(amount: number): string {

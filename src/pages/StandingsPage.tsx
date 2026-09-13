@@ -1,10 +1,11 @@
 // ============================================================================
-// StandingsPage — Classifica Live con Tie-Break e Trend Posizioni (FASE 3)
+// StandingsPage — Classifica Live, Montepremi e Premi (FASE 3 & FASE 5)
 // ============================================================================
 
 import { useNavigate } from 'react-router';
 import { useTournament } from '../context/TournamentContext';
 import type { StandingsEntry, Team } from '../models/types';
+import { formatCurrency, getPrizeForPosition } from '../services/prizeService';
 
 export default function StandingsPage() {
   const { state } = useTournament();
@@ -27,6 +28,7 @@ export default function StandingsPage() {
   }
 
   const { standings, teams, players, config } = tournament;
+  const isCompleted = tournament.status === 'completed';
 
   // Ordina per posizione
   const sortedStandings = [...standings].sort((a, b) => a.position - b.position);
@@ -64,6 +66,8 @@ export default function StandingsPage() {
     );
   };
 
+  const hasPrizes = config.prizePool !== null && config.prizePool > 0;
+
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
@@ -71,12 +75,18 @@ export default function StandingsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold font-[var(--font-display)]">
-              Classifica Live
+              {isCompleted ? 'Classifica Finale' : 'Classifica Live'}
             </h2>
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live
-            </span>
+            {isCompleted ? (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Torneo Concluso 🏆
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live
+              </span>
+            )}
           </div>
           <p className="text-slate-400 mt-1 text-sm">{config.name}</p>
         </div>
@@ -91,11 +101,62 @@ export default function StandingsPage() {
         </button>
       </div>
 
-      {/* Podio visuale per i primi 3 posti (se ci sono partite giocate o almeno 3 squadre) */}
+      {/* Banner Celebrazione Vincitore (se concluso) */}
+      {isCompleted && sortedStandings.length > 0 && (
+        <div className="glass-card p-5 border-amber-400/50 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-amber-500/20 text-center space-y-2 animate-fade-in shadow-xl shadow-amber-500/10">
+          <div className="text-4xl animate-bounce">🏆 🎉</div>
+          <h3 className="text-xl font-black text-white">Torneo Concluso!</h3>
+          <p className="text-sm text-slate-200">
+            Complimenti ai vincitori:{' '}
+            <strong className="text-amber-300 font-bold text-base">
+              {getTeam(sortedStandings[0]?.teamId)?.customName ?? getTeam(sortedStandings[0]?.teamId)?.name}
+            </strong>{' '}
+            ({getPlayerNames(getTeam(sortedStandings[0]?.teamId))})
+          </p>
+          {hasPrizes && getPrizeForPosition(config.prizeDistribution, 1) && (
+            <div className="inline-block mt-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold">
+              💰 Primo Premio Assegnato: {formatCurrency(getPrizeForPosition(config.prizeDistribution, 1)!.amount)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Banner Montepremi (se impostato) */}
+      {hasPrizes && (
+        <div className="glass-card p-4 border-amber-400/30 bg-amber-400/5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">💰</span>
+            <div>
+              <span className="text-[11px] font-semibold text-amber-300/80 uppercase tracking-wider">
+                Montepremi Totale
+              </span>
+              <p className="text-xl font-black text-white">
+                {formatCurrency(config.prizePool!)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            {config.prizeDistribution
+              .filter((p) => p.amount > 0)
+              .map((p) => (
+                <span
+                  key={p.position}
+                  className="px-2.5 py-1 rounded bg-white/10 text-slate-200 border border-white/10"
+                >
+                  <strong className="text-amber-300">{p.label}:</strong>{' '}
+                  {formatCurrency(p.amount)} ({p.percentage}%)
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Podio visuale per i primi 3 posti */}
       {top3.length >= 2 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {top3.map((entry, idx) => {
             const team = getTeam(entry.teamId);
+            const prize = getPrizeForPosition(config.prizeDistribution, entry.position);
             const medals = ['🥇 1° Posto', '🥈 2° Posto', '🥉 3° Posto'];
             const borders = [
               'border-amber-400/50 bg-amber-400/10',
@@ -107,11 +168,18 @@ export default function StandingsPage() {
             return (
               <div
                 key={entry.teamId}
-                className={`glass-card p-4 text-center border ${borders[idx]} space-y-2`}
+                className={`glass-card p-4 text-center border ${borders[idx]} space-y-2 relative overflow-hidden`}
               >
-                <span className={`text-xs font-bold uppercase tracking-wider ${textAccents[idx]}`}>
-                  {medals[idx]}
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${textAccents[idx]}`}>
+                    {medals[idx]}
+                  </span>
+                  {prize && prize.amount > 0 && (
+                    <span className="text-[11px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 rounded-full">
+                      {formatCurrency(prize.amount)}
+                    </span>
+                  )}
+                </div>
                 <p className="font-bold text-base text-white truncate">
                   {team?.customName ?? team?.name ?? 'Coppia'}
                 </p>
@@ -170,12 +238,17 @@ export default function StandingsPage() {
                 <th className="px-4 py-3 text-xs uppercase tracking-wider text-white font-bold text-right w-24">
                   Punti
                 </th>
+                {hasPrizes && (
+                  <th className="px-4 py-3 text-xs uppercase tracking-wider text-amber-300 font-bold text-right w-28">
+                    Premio
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {sortedStandings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400">
+                  <td colSpan={hasPrizes ? 9 : 8} className="text-center py-12 text-slate-400">
                     Nessuna coppia in classifica.
                   </td>
                 </tr>
@@ -185,6 +258,7 @@ export default function StandingsPage() {
                   const isFirst = entry.position === 1;
                   const isSecond = entry.position === 2;
                   const isThird = entry.position === 3;
+                  const prize = getPrizeForPosition(config.prizeDistribution, entry.position);
 
                   return (
                     <tr
@@ -257,6 +331,19 @@ export default function StandingsPage() {
                       <td className="px-4 py-3.5 text-right font-black text-white text-base">
                         {entry.totalPoints}
                       </td>
+
+                      {/* Premio Assegnato */}
+                      {hasPrizes && (
+                        <td className="px-4 py-3.5 text-right text-sm font-bold text-amber-300">
+                          {prize && prize.amount > 0 ? (
+                            <span className="bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded">
+                              {formatCurrency(prize.amount)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">—</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })

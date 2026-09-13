@@ -36,7 +36,15 @@ export function confirmMatchResult(
     return { ...round, matches, completed };
   });
 
-  return { ...tournament, rounds };
+  const allRoundsCompleted =
+    rounds.length === tournament.config.totalRounds &&
+    rounds.every((r) => r.completed);
+
+  return {
+    ...tournament,
+    rounds,
+    status: allRoundsCompleted ? 'completed' : 'in-progress',
+  };
 }
 
 /**
