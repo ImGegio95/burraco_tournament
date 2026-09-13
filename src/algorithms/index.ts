@@ -15,11 +15,13 @@ import type { TournamentEngine } from './types';
  * - knockout
  */
 import { roundRobinEngine } from './roundRobin';
+import { swissEngine } from './swiss';
 
 const engineRegistry = new Map<TournamentFormat, TournamentEngine>();
 
 // Registrazione automatica dei motori disponibili
 registerEngine('round-robin', roundRobinEngine);
+registerEngine('swiss', swissEngine);
 
 /**
  * Registra un motore di torneo.

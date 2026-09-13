@@ -220,6 +220,34 @@ export default function TournamentPage() {
         </div>
       )}
 
+      {/* Azione Genera Prossimo Round per formule sequenziali (es. Swiss) */}
+      {config.format === 'swiss' &&
+        rounds.length > 0 &&
+        rounds.length < config.totalRounds && (
+          <div className="glass-card p-4 border-emerald-500/30 bg-emerald-500/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-white text-sm">
+                Round {rounds.length} {rounds[rounds.length - 1].completed ? 'completato! 🎉' : 'in corso...'}
+              </p>
+              <p className="text-xs text-slate-300">
+                {rounds[rounds.length - 1].completed
+                  ? `Puoi ora generare gli accoppiamenti del Round ${rounds.length + 1} basati sulla classifica.`
+                  : `Completa tutti i risultati del Round ${rounds.length} per procedere.`}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                dispatch({ type: 'GENERATE_NEXT_ROUND' });
+                setActiveRoundNumber(rounds.length + 1);
+              }}
+              disabled={!rounds[rounds.length - 1].completed}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shadow-md shadow-emerald-600/20"
+            >
+              Genera Round {rounds.length + 1} →
+            </button>
+          </div>
+        )}
+
       {/* Navigazione rapida alla classifica */}
       <div className="pt-2">
         <button

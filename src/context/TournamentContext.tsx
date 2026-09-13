@@ -23,6 +23,8 @@ import { confirmMatchResult, resetMatchResult } from '../services/scoringService
 import { calculateStandings } from '../services/standingsService';
 import { saveTournament, loadTournaments } from '../services/storageService';
 import { generateAllRoundRobinRounds } from '../algorithms/roundRobin';
+import { generateSwissRound } from '../algorithms/swiss';
+import { generateId } from '../utils/id';
 
 // --- Stato ---
 
@@ -58,6 +60,7 @@ type TournamentAction =
   | { type: 'RECALCULATE_STANDINGS' }
   | { type: 'START_TOURNAMENT' }
   | { type: 'GENERATE_ROUNDS' }
+  | { type: 'GENERATE_NEXT_ROUND' }
   | { type: 'ADD_ROUND'; payload: Tournament['rounds'][0] };
 
 // --- Reducer ---
@@ -260,6 +263,16 @@ function tournamentReducer(
       let rounds = state.currentTournament.rounds;
       if (state.currentTournament.config.format === 'round-robin') {
         rounds = generateAllRoundRobinRounds(state.currentTournament);
+      } else if (state.currentTournament.config.format === 'swiss' && rounds.length === 0) {
+        const r1Matches = generateSwissRound(state.currentTournament, 1);
+        rounds = [
+          {
+            id: generateId(),
+            number: 1,
+            matches: r1Matches,
+            completed: false,
+          },
+        ];
       }
       const updated: Tournament = {
         ...state.currentTournament,
@@ -280,6 +293,16 @@ function tournamentReducer(
       let rounds = state.currentTournament.rounds;
       if (state.currentTournament.config.format === 'round-robin') {
         rounds = generateAllRoundRobinRounds(state.currentTournament);
+      } else if (state.currentTournament.config.format === 'swiss' && rounds.length === 0) {
+        const r1Matches = generateSwissRound(state.currentTournament, 1);
+        rounds = [
+          {
+            id: generateId(),
+            number: 1,
+            matches: r1Matches,
+            completed: false,
+          },
+        ];
       }
       return {
         ...state,
@@ -288,6 +311,35 @@ function tournamentReducer(
           rounds,
         },
       };
+    }
+
+    case 'GENERATE_NEXT_ROUND': {
+      if (!state.currentTournament) return state;
+      const tournament = state.currentTournament;
+      if (tournament.rounds.length >= tournament.config.totalRounds) return state;
+
+      if (tournament.config.format === 'swiss') {
+        const nextRoundNumber = tournament.rounds.length + 1;
+        const newMatches = generateSwissRound(tournament, nextRoundNumber);
+        const newRound = {
+          id: generateId(),
+          number: nextRoundNumber,
+          matches: newMatches,
+          completed: false,
+        };
+        const updated = {
+          ...tournament,
+          rounds: [...tournament.rounds, newRound],
+        };
+        return {
+          ...state,
+          currentTournament: {
+            ...updated,
+            standings: calculateStandings(updated),
+          },
+        };
+      }
+      return state;
     }
 
     case 'ADD_ROUND': {
