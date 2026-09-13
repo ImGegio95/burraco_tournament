@@ -5,7 +5,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useTournament } from '../context/TournamentContext';
-import type { Match, Team } from '../models/types';
+import type { Match } from '../models/types';
+import MatchCard from '../components/MatchCard';
 
 export default function TournamentPage() {
   const { state, dispatch } = useTournament();
@@ -62,18 +63,6 @@ export default function TournamentPage() {
     .filter((m) => m.status === 'confirmed').length;
 
   const activeRound = rounds.find((r) => r.number === activeRoundNumber) ?? rounds[0];
-
-  const getTeam = (teamId: string | null): Team | undefined => {
-    if (!teamId) return undefined;
-    return teams.find((t) => t.id === teamId);
-  };
-
-  const getPlayerNames = (team?: Team): string => {
-    if (!team) return '';
-    const p1 = players.find((p) => p.id === team.playerIds[0]);
-    const p2 = players.find((p) => p.id === team.playerIds[1]);
-    return `${p1?.name ?? '?'} e ${p2?.name ?? '?'}`;
-  };
 
   const formatLabels: Record<string, string> = {
     'round-robin': 'Round Robin',
@@ -216,92 +205,15 @@ export default function TournamentPage() {
 
               {/* Lista delle partite */}
               <div className="space-y-3">
-                {activeRound.matches.map((match: Match) => {
-                  const teamA = getTeam(match.teamAId);
-                  const teamB = getTeam(match.teamBId);
-                  const isBye = match.teamBId === null;
-
-                  if (isBye) {
-                    return (
-                      <div
-                        key={match.id}
-                        className="glass-card p-4 border-dashed border-amber-400/30 bg-amber-400/5 
-                                   flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 text-xs font-semibold">
-                            💤 Turno di Riposo
-                          </span>
-                          <div>
-                            <p className="font-semibold text-white">
-                              {teamA?.customName ?? teamA?.name ?? 'Coppia'}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              {getPlayerNames(teamA)}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-amber-300/80">
-                          Questa coppia riposa in questo round (BYE)
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div
-                      key={match.id}
-                      className="glass-card p-4 hover:border-emerald-400/30 transition-all space-y-3"
-                    >
-                      {/* Header partita */}
-                      <div className="flex items-center justify-between text-xs text-slate-400 border-b border-white/5 pb-2">
-                        <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                          <span>🪑</span>
-                          <span>Tavolo {match.table}</span>
-                        </span>
-                        <span className="text-[11px] px-2 py-0.5 rounded bg-white/10 text-slate-300">
-                          {match.status === 'confirmed' ? 'Concluso' : 'In attesa'}
-                        </span>
-                      </div>
-
-                      {/* Scontro coppie */}
-                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-3">
-                        {/* Squadra A */}
-                        <div className="bg-white/[0.03] p-3 rounded-lg border border-white/5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-emerald-400 font-bold text-sm">A</span>
-                            <p className="font-semibold text-white truncate">
-                              {teamA?.customName ?? teamA?.name ?? 'Coppia A'}
-                            </p>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-0.5 truncate">
-                            {getPlayerNames(teamA)}
-                          </p>
-                        </div>
-
-                        {/* VS badge */}
-                        <div className="text-center my-1 sm:my-0">
-                          <span className="w-8 h-8 rounded-full bg-white/10 text-slate-300 text-xs font-bold inline-flex items-center justify-center border border-white/15">
-                            VS
-                          </span>
-                        </div>
-
-                        {/* Squadra B */}
-                        <div className="bg-white/[0.03] p-3 rounded-lg border border-white/5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-amber-400 font-bold text-sm">B</span>
-                            <p className="font-semibold text-white truncate">
-                              {teamB?.customName ?? teamB?.name ?? 'Coppia B'}
-                            </p>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-0.5 truncate">
-                            {getPlayerNames(teamB)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {activeRound.matches.map((match: Match) => (
+                  <MatchCard
+                    key={match.id}
+                    match={match}
+                    roundId={activeRound.id}
+                    teams={teams}
+                    players={players}
+                  />
+                ))}
               </div>
             </div>
           )}
