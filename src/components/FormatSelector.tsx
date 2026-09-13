@@ -1,44 +1,51 @@
 // ============================================================================
-// FormatSelector — Selezione formula di torneo e numero round
+// FormatSelector — Selezione Formula e Parametri Gara (2026 Edition)
 // ============================================================================
 
+import { 
+  GitFork, 
+  Repeat, 
+  Swords, 
+  Layers, 
+  Lightbulb, 
+  CheckCircle2, 
+  Sliders
+} from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
 import type { TournamentFormat } from '../models/types';
 import { suggestTournamentSetup } from '../services/tournamentService';
 
-const FORMAT_OPTIONS: {
-  id: TournamentFormat;
-  name: string;
-  description: string;
-  icon: string;
-  available: boolean;
-}[] = [
+const FORMAT_OPTIONS = [
   {
-    id: 'swiss',
+    id: 'swiss' as TournamentFormat,
     name: 'Sistema Svizzero',
-    description: 'Abbinamenti basati sulla classifica. Ideale per tornei brevi tra amici.',
-    icon: '🇨🇭',
+    subtitle: 'Consigliato per serate e club',
+    description: 'Abbinamenti equi basati sul punteggio live, nessun re-match e rotazione dei turni di riposo.',
+    icon: GitFork,
     available: true,
   },
   {
-    id: 'round-robin',
+    id: 'round-robin' as TournamentFormat,
     name: 'Round Robin',
-    description: 'Tutti contro tutti. Ogni coppia affronta tutte le altre.',
-    icon: '🔄',
+    subtitle: 'Girone all\'Italiana',
+    description: 'Tutti contro tutti con metodo Berger circle. Ogni coppia affronta tutte le altre.',
+    icon: Repeat,
     available: true,
   },
   {
-    id: 'knockout',
+    id: 'knockout' as TournamentFormat,
     name: 'Eliminazione Diretta',
-    description: 'Chi perde è eliminato. Quarti, semifinali, finale.',
-    icon: '⚡',
+    subtitle: 'Tabellone Tennistico',
+    description: 'Incontri a eliminazione secca: chi vince avanza verso Semifinali e Finale.',
+    icon: Swords,
     available: true,
   },
   {
-    id: 'groups-playoff',
+    id: 'groups-playoff' as TournamentFormat,
     name: 'Gironi + Playoff',
-    description: 'Fase a gironi seguita da semifinali e finale.',
-    icon: '🏟️',
+    subtitle: 'Fase Mista',
+    description: 'Fase preliminare a gironi seguita da tabellone ad eliminazione diretta.',
+    icon: Layers,
     available: false,
   },
 ];
@@ -67,101 +74,131 @@ export default function FormatSelector() {
   const minRounds = 1;
 
   return (
-    <div className="space-y-5">
-      {/* Suggerimento automatico */}
+    <div className="space-y-6">
+      
+      {/* Suggerimento Algoritmico */}
       {suggestion && teamCount >= 2 && (
-        <div className="glass-card p-4 border-emerald-400/20 bg-emerald-400/5">
-          <p className="text-sm text-emerald-300 flex items-center gap-2">
-            <span>💡</span>
-            <span>
-              <strong>Suggerimento:</strong>{' '}
-              {FORMAT_OPTIONS.find((f) => f.id === suggestion.format)?.name} con{' '}
-              {suggestion.rounds} round per {teamCount} coppie.
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <Lightbulb className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 block">
+              Configurazione Consigliata
             </span>
-          </p>
+            <p className="text-sm text-slate-200">
+              Per <strong>{teamCount} coppie</strong> consigliamo il <strong>{FORMAT_OPTIONS.find((f) => f.id === suggestion.format)?.name}</strong> con <strong>{suggestion.rounds} round</strong>.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Selezione formula */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {FORMAT_OPTIONS.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => opt.available && handleFormatChange(opt.id)}
-            disabled={!opt.available}
-            className={`p-4 rounded-xl text-left transition-all cursor-pointer border
-              ${format === opt.id
-                ? 'bg-emerald-600/20 border-emerald-400/50 ring-1 ring-emerald-400/30'
-                : opt.available
-                  ? 'bg-white/[0.04] border-white/10 hover:bg-white/[0.08] hover:border-white/20'
-                  : 'bg-white/[0.02] border-white/5 opacity-50 cursor-not-allowed'
-              }`}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xl">{opt.icon}</span>
-              <span className="font-semibold text-white text-sm">{opt.name}</span>
-              {!opt.available && (
-                <span className="text-[10px] bg-white/10 text-slate-400 px-1.5 py-0.5 rounded-full ml-auto">
-                  Prossimamente
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">{opt.description}</p>
-          </button>
-        ))}
+      {/* Griglia Selezione Formule */}
+      <div className="space-y-2">
+        <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+          Scegli la Formula di Gara
+        </label>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {FORMAT_OPTIONS.map((opt) => {
+            const isSelected = format === opt.id;
+            const Icon = opt.icon;
+
+            return (
+              <button
+                key={opt.id}
+                onClick={() => opt.available && handleFormatChange(opt.id)}
+                disabled={!opt.available}
+                className={`p-4 sm:p-5 rounded-2xl text-left transition-all cursor-pointer border flex flex-col justify-between gap-3 relative ${
+                  isSelected
+                    ? 'bg-emerald-500/15 border-emerald-500/50 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-400/40'
+                    : opt.available
+                    ? 'bg-white/[0.03] border-white/[0.08] hover:bg-white/[0.06] hover:border-white/[0.15]'
+                    : 'bg-white/[0.01] border-white/[0.04] opacity-40 cursor-not-allowed'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${
+                      isSelected
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                        : 'bg-white/[0.05] text-slate-400 border-white/[0.08]'
+                    }`}>
+                      <Icon className="w-5 h-5 stroke-[2.2]" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-base">
+                        {opt.name}
+                      </h4>
+                      <p className="text-[11px] font-semibold text-emerald-400/90 uppercase tracking-wider">
+                        {opt.subtitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  {isSelected && (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 stroke-[2.5] shrink-0" />
+                  )}
+
+                  {!opt.available && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/[0.08] text-slate-400 uppercase tracking-wider shrink-0">
+                      In Arrivo
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  {opt.description}
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Numero round */}
-      <div className="glass-card p-4 space-y-3">
+      {/* Regolazione Round */}
+      <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-4">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-300">
-            Numero di round
-          </label>
-          <span className="text-lg font-bold text-emerald-400">{totalRounds}</span>
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm font-bold text-white">Numero Totale di Round</span>
+          </div>
+          <span className="text-xl font-black text-emerald-400 font-[var(--font-display)]">
+            {totalRounds} {totalRounds === 1 ? 'Round' : 'Round'}
+          </span>
         </div>
 
         {format === 'knockout' ? (
           <p className="text-xs text-slate-400">
-            Il numero di round è determinato automaticamente dal numero di coppie.
+            Nel torneo a eliminazione diretta, il numero di round è calcolato automaticamente sulla base del tabellone tennistico ({totalRounds} turni per {teamCount} coppie).
           </p>
         ) : (
-          <>
+          <div className="space-y-2">
             <input
               type="range"
               min={minRounds}
               max={maxRounds}
               value={totalRounds}
               onChange={(e) => handleRoundsChange(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
+              className="w-full accent-emerald-500 cursor-pointer h-2 bg-white/10 rounded-lg"
             />
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>{minRounds}</span>
-              <span>{maxRounds}</span>
+            <div className="flex justify-between text-xs text-slate-500 font-semibold">
+              <span>{minRounds} Minimo</span>
+              <span>{maxRounds} Massimo</span>
             </div>
-          </>
+          </div>
         )}
 
-        {/* Info round */}
-        <div className="text-xs text-slate-400 space-y-1">
+        <div className="text-xs text-slate-400 border-t border-white/[0.06] pt-3">
           {format === 'round-robin' && (
-            <p>
-              Round Robin standard: {teamCount > 0 ? teamCount - 1 : 'N-1'} round 
-              per far incontrare tutte le coppie.
-            </p>
+            <p>Con {teamCount} coppie, il Round Robin completo prevede {teamCount > 0 ? teamCount - 1 : 'N-1'} turni di gara.</p>
           )}
           {format === 'swiss' && (
-            <p>
-              {totalRounds} round con abbinamenti basati sulla classifica.
-              Partite totali: ~{teamCount > 0 ? Math.floor(teamCount / 2) * totalRounds : 0}.
-            </p>
-          )}
-          {format === 'knockout' && teamCount > 0 && (
-            <p>
-              {teamCount} coppie → {Math.ceil(Math.log2(teamCount))} turni eliminatori.
-            </p>
+            <p>Con il Sistema Svizzero disputerai {totalRounds} turni con abbinamenti di classifica sempre bilanciati.</p>
           )}
         </div>
       </div>
+
     </div>
   );
 }

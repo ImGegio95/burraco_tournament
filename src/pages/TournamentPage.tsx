@@ -1,9 +1,21 @@
 // ============================================================================
-// TournamentPage — Dashboard Torneo con Calendario Incontri e Tavoli (FASE 2)
+// TournamentPage — Dashboard Incontri e Calendario Round (2026 Edition)
 // ============================================================================
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { 
+  Trophy, 
+  Download, 
+  BarChart3, 
+  Users, 
+  Layers, 
+  CheckCircle2, 
+  TableProperties, 
+  Sparkles, 
+  ArrowRight,
+  Clock
+} from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
 import type { Match } from '../models/types';
 import MatchCard from '../components/MatchCard';
@@ -17,8 +29,6 @@ export default function TournamentPage() {
 
   const [activeRoundNumber, setActiveRoundNumber] = useState<number>(1);
 
-  // Se i round non sono ancora stati generati (ad es. per tornei avviati prima di Fase 2),
-  // o se il numero di round è 0, generiamoli automaticamente se il torneo è in-progress
   useEffect(() => {
     if (
       tournament &&
@@ -30,7 +40,6 @@ export default function TournamentPage() {
     }
   }, [tournament, dispatch]);
 
-  // Seleziona di default il primo round non completato
   useEffect(() => {
     if (tournament && tournament.rounds.length > 0) {
       const firstIncomplete = tournament.rounds.find((r) => !r.completed);
@@ -44,14 +53,13 @@ export default function TournamentPage() {
 
   if (!tournament) {
     return (
-      <div className="text-center py-12 animate-fade-in">
-        <p className="text-slate-400 text-lg">Nessun torneo selezionato.</p>
+      <div className="text-center py-16 animate-fade-in glass-card max-w-lg mx-auto p-8 space-y-4">
+        <p className="text-slate-400 text-base">Nessun torneo attualmente selezionato.</p>
         <button
           onClick={() => navigate('/')}
-          className="mt-4 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white 
-                     font-semibold rounded-lg transition-colors cursor-pointer"
+          className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
         >
-          Torna alla Home
+          Torna all'Elenco Tornei
         </button>
       </div>
     );
@@ -67,7 +75,7 @@ export default function TournamentPage() {
   const activeRound = rounds.find((r) => r.number === activeRoundNumber) ?? rounds[0];
 
   const formatLabels: Record<string, string> = {
-    'round-robin': 'Round Robin',
+    'round-robin': 'Round Robin (Girone all\'Italiana)',
     swiss: 'Sistema Svizzero',
     knockout: 'Eliminazione Diretta',
     'groups-playoff': 'Gironi + Playoff',
@@ -75,124 +83,149 @@ export default function TournamentPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header torneo */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold font-[var(--font-display)]">
+      
+      {/* Header del Torneo */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 glass-card p-5 sm:p-6">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-2xl sm:text-3xl font-black text-white font-[var(--font-display)] tracking-tight">
               {config.name}
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              {tournament.status === 'in-progress' ? 'In Corso' : 'Concluso'}
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+              tournament.status === 'in-progress' 
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                : 'bg-slate-500/15 text-slate-300 border-slate-500/25'
+            }`}>
+              {tournament.status === 'in-progress' ? '● In Corso' : '✓ Concluso'}
             </span>
           </div>
-          <p className="text-slate-400 mt-1 flex items-center gap-2 text-sm">
-            <span>{formatLabels[config.format] ?? config.format}</span>
+
+          <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-emerald-400">{formatLabels[config.format] ?? config.format}</span>
             <span>•</span>
-            <span>{teams.length} coppie</span>
+            <span>{teams.length} Coppie</span>
             <span>•</span>
-            <span>{rounds.length} round previsti</span>
+            <span>{rounds.length} Round programmati</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Azioni Rapide */}
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => downloadTournamentFile(tournament)}
-            className="px-3.5 py-2.5 rounded-lg glass-card hover:bg-white/10 
-                       border border-white/10 text-slate-300 font-medium 
-                       transition-all cursor-pointer flex items-center gap-1.5 text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 hover:text-white font-semibold text-xs sm:text-sm transition-all active:scale-[0.98] cursor-pointer"
             title="Scarica backup JSON del torneo"
           >
-            <span>💾</span>
-            <span className="hidden sm:inline">Esporta JSON</span>
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Esporta JSON</span>
           </button>
+
           <button
             onClick={() => navigate('/standings')}
-            className="px-4 py-2.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 
-                       border border-emerald-400/30 text-emerald-300 font-medium 
-                       transition-all cursor-pointer flex items-center gap-1.5 text-sm"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
           >
-            <span>📊</span>
-            <span>Classifica</span>
+            <BarChart3 className="w-4 h-4 stroke-[2.5]" />
+            <span>Classifica Live</span>
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {[
           {
-            label: 'Round',
+            label: 'Round Disputati',
             value: `${completedRounds} / ${rounds.length || config.totalRounds}`,
-            icon: '🔄',
+            icon: Layers,
+            accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
           },
           {
-            label: 'Coppie',
+            label: 'Coppie Iscritte',
             value: teams.length.toString(),
-            icon: '👥',
+            icon: Users,
+            accent: 'text-teal-400 bg-teal-500/10 border-teal-500/20',
           },
           {
             label: 'Partite Concluse',
             value: `${confirmedMatches} / ${totalMatches}`,
-            icon: '🎯',
+            icon: CheckCircle2,
+            accent: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
           },
           {
-            label: 'Tavoli Simultanei',
+            label: 'Tavoli di Gioco',
             value: Math.floor(teams.length / 2).toString(),
-            icon: '🪑',
+            icon: TableProperties,
+            accent: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
           },
-        ].map((stat) => (
-          <div key={stat.label} className="glass-card p-3.5 text-center">
-            <div className="text-xl mb-0.5">{stat.icon}</div>
-            <div className="text-lg font-bold text-white">{stat.value}</div>
-            <div className="text-[11px] text-slate-400 uppercase tracking-wider mt-0.5">
-              {stat.label}
+        ].map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="glass-card p-4 sm:p-5 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${stat.accent}`}>
+                <Icon className="w-6 h-6 stroke-[2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-black text-white font-[var(--font-display)] tracking-tight">
+                  {stat.value}
+                </div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 truncate">
+                  {stat.label}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Sezione Round & Incontri */}
       {rounds.length === 0 ? (
-        <div className="glass-card p-8 text-center space-y-4">
-          <div className="text-4xl">🎲</div>
-          <h3 className="text-lg font-semibold">Calendario non ancora generato</h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Genera automaticamente il calendario degli incontri Round Robin per tutte le coppie.
-          </p>
+        <div className="glass-card p-10 sm:p-14 text-center space-y-4 max-w-lg mx-auto border-dashed border-white/10">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-xl font-bold text-white font-[var(--font-display)]">
+              Calendario non ancora generato
+            </h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Genera automaticamente tutti i turni e gli incontri per le coppie partecipanti secondo la formula prescelta.
+            </p>
+          </div>
           <button
             onClick={() => dispatch({ type: 'GENERATE_ROUNDS' })}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold 
-                       rounded-lg transition-all cursor-pointer shadow-lg shadow-emerald-600/20"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer"
           >
-            Genera Incontri
+            <Sparkles className="w-4 h-4 stroke-[2.5]" />
+            <span>Genera Incontri Ora</span>
           </button>
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Selettore Round (Tab / Pills) */}
+          
+          {/* Selettore Round (Segmented Control) */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {rounds.map((r) => {
               const isSelected = r.number === activeRoundNumber;
+              const roundTitle = config.format === 'knockout'
+                ? `${getKnockoutRoundName(r.matches.length)} (R${r.number})`
+                : `Round ${r.number}`;
+
               return (
                 <button
                   key={r.id}
                   onClick={() => setActiveRoundNumber(r.number)}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all cursor-pointer whitespace-nowrap flex items-center gap-2
-                    ${
-                      isSelected
-                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                        : r.completed
-                        ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/20 hover:bg-white/[0.08]'
-                        : 'bg-white/[0.05] text-slate-300 border border-white/10 hover:bg-white/[0.08]'
-                    }`}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border ${
+                    isSelected
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/25'
+                      : r.completed
+                      ? 'bg-white/[0.04] text-emerald-400 border-emerald-500/20 hover:bg-white/[0.08]'
+                      : 'bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]'
+                  }`}
                 >
-                  <span>
-                    {config.format === 'knockout'
-                      ? `${getKnockoutRoundName(r.matches.length)} (R${r.number})`
-                      : `Round ${r.number}`}
-                  </span>
-                  {r.completed && <span className="text-xs">✓</span>}
+                  <span>{roundTitle}</span>
+                  {r.completed && (
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${isSelected ? 'text-slate-950 stroke-[2.5]' : 'text-emerald-400'}`} />
+                  )}
                 </button>
               );
             })}
@@ -200,31 +233,34 @@ export default function TournamentPage() {
 
           {/* Dettaglio del Round attivo */}
           {activeRound && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm px-1">
-                <span className="font-semibold text-slate-300 flex items-center gap-2">
-                  <span>
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between text-xs sm:text-sm px-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white text-base">
                     {config.format === 'knockout'
                       ? getKnockoutRoundName(activeRound.matches.length)
-                      : `Partite Round ${activeRound.number}`}
+                      : `Incontri Round ${activeRound.number}`}
                   </span>
-                  <span className="text-xs font-normal text-slate-400">
-                    ({activeRound.matches.length} incontri)
+                  <span className="text-xs text-slate-400">
+                    ({activeRound.matches.length} partite in programma)
                   </span>
-                </span>
+                </div>
+
                 {activeRound.completed ? (
-                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-medium">
-                    Completato
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Round Completato
                   </span>
                 ) : (
-                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
-                    Da disputare
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <Clock className="w-3.5 h-3.5" />
+                    In Svolgimento
                   </span>
                 )}
               </div>
 
-              {/* Lista delle partite */}
-              <div className="space-y-3">
+              {/* Lista delle Partite */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {activeRound.matches.map((match: Match) => (
                   <MatchCard
                     key={match.id}
@@ -240,19 +276,22 @@ export default function TournamentPage() {
         </div>
       )}
 
-      {/* Azione Genera Prossimo Round per formule sequenziali (Swiss & Knockout) */}
+      {/* Banner Generazione Prossimo Round per formule sequenziali */}
       {(config.format === 'swiss' || config.format === 'knockout') &&
         rounds.length > 0 &&
         rounds.length < config.totalRounds && (
-          <div className="glass-card p-4 border-emerald-500/30 bg-emerald-500/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div>
-              <p className="font-bold text-white text-sm">
-                Round {rounds.length} {rounds[rounds.length - 1].completed ? 'completato! 🎉' : 'in corso...'}
-              </p>
+          <div className="glass-card p-5 border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-slate-900/40 to-emerald-500/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in shadow-xl">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <h4 className="font-bold text-white text-sm sm:text-base">
+                  Round {rounds.length} {rounds[rounds.length - 1].completed ? 'Completato!' : 'in corso...'}
+                </h4>
+              </div>
               <p className="text-xs text-slate-300">
                 {rounds[rounds.length - 1].completed
-                  ? `Puoi ora generare il turno successivo con i vincitori qualificati.`
-                  : `Completa tutti i risultati del Round ${rounds.length} per procedere.`}
+                  ? `Tutti i risultati del turno sono registrati. Puoi generare gli abbinamenti del Round ${rounds.length + 1}.`
+                  : `Completa e conferma tutti i punteggi del Round ${rounds.length} per abilitare il turno successivo.`}
               </p>
             </div>
             <button
@@ -261,24 +300,26 @@ export default function TournamentPage() {
                 setActiveRoundNumber(rounds.length + 1);
               }}
               disabled={!rounds[rounds.length - 1].completed}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shadow-md shadow-emerald-600/20"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-500/20 whitespace-nowrap"
             >
-              Genera Prossimo Turno →
+              <span>Genera Round {rounds.length + 1}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-      {/* Navigazione rapida alla classifica */}
+      {/* Footer Banner Navigazione Classifica */}
       <div className="pt-2">
         <button
           onClick={() => navigate('/standings')}
-          className="w-full glass-card-light p-4 text-center hover:bg-white/[0.12] 
-                     transition-all cursor-pointer flex items-center justify-center gap-2 font-semibold text-white"
+          className="w-full glass-card p-4 sm:p-5 text-center hover:border-emerald-500/40 transition-all cursor-pointer flex items-center justify-center gap-2.5 font-bold text-sm sm:text-base text-white group"
         >
-          <span className="text-xl">🏆</span>
-          <span>Visualizza Classifica Live</span>
+          <Trophy className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+          <span>Apri la Classifica Live Completa & Podio</span>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
         </button>
       </div>
+
     </div>
   );
 }

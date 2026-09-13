@@ -1,29 +1,40 @@
 // ============================================================================
-// HomePage — Lista tornei e creazione nuovo torneo
+// HomePage — Dashboard Moderna dei Tornei (2026 Edition)
 // ============================================================================
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { 
+  Plus, 
+  Upload, 
+  Trophy, 
+  Users, 
+  Calendar, 
+  Trash2, 
+  ArrowRight, 
+  AlertCircle, 
+  Sparkles,
+  CheckCircle2,
+  Clock
+} from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
 import { validateAndImportTournament } from '../services/storageService';
+import type { Tournament } from '../models/types';
 
 export default function HomePage() {
   const { state, dispatch } = useTournament();
   const navigate = useNavigate();
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleCreate = () => {
     const name = newName.trim() || 'Torneo di Burraco';
     dispatch({ type: 'CREATE_TOURNAMENT', payload: { name } });
     setNewName('');
     setShowNewForm(false);
-    // Il torneo viene impostato come corrente dal reducer
-    // Navigheremo alla pagina di setup nella FASE 1
     navigate('/setup');
   };
-
-  const [importError, setImportError] = useState<string | null>(null);
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,20 +59,17 @@ export default function HomePage() {
     e.target.value = '';
   };
 
-  const handleOpen = (id: string) => {
-    const tournament = state.tournaments.find((t) => t.id === id);
-    if (tournament) {
-      dispatch({ type: 'SET_CURRENT_TOURNAMENT', payload: tournament });
-      if (tournament.status === 'setup') {
-        navigate('/setup');
-      } else {
-        navigate('/tournament');
-      }
+  const handleOpen = (tournament: Tournament) => {
+    dispatch({ type: 'SET_CURRENT_TOURNAMENT', payload: tournament });
+    if (tournament.status === 'setup') {
+      navigate('/setup');
+    } else {
+      navigate('/tournament');
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Sei sicuro di voler eliminare questo torneo?')) {
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`Sei sicuro di voler eliminare definitivamente il torneo "${name}"?`)) {
       dispatch({ type: 'DELETE_TOURNAMENT', payload: id });
     }
   };
@@ -72,37 +80,36 @@ export default function HomePage() {
 
   return (
     <div className="animate-fade-in space-y-8">
-      {/* Hero */}
-      <div className="text-center py-8">
-        <div className="text-6xl mb-4">🃏</div>
-        <h2 className="text-3xl font-bold font-[var(--font-display)] mb-2">
-          Burraco Tournament
-        </h2>
-        <p className="text-slate-400 text-lg">
-          Gestisci i tuoi tornei di burraco tra amici
-        </p>
-      </div>
+      {/* Hero Section Moderna */}
+      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-10 border border-white/[0.08] bg-gradient-to-br from-slate-900/90 via-slate-900/50 to-emerald-950/20 backdrop-blur-xl shadow-2xl">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Burraco Championship Suite</span>
+          </div>
 
-      {/* Nuovo Torneo & Importa */}
-      <div className="flex flex-col items-center justify-center gap-3">
-        {!showNewForm ? (
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight font-[var(--font-display)]">
+            Gestisci i tuoi tornei di Burraco con precisione
+          </h2>
+
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+            Algoritmi professionali (Round Robin, Sistema Svizzero, Eliminazione Diretta), assegnazione tavoli, montepremi e classifiche in tempo reale con tie-break automatico.
+          </p>
+
+          {/* Quick Actions */}
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowNewForm(true)}
-              className="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold 
-                         rounded-xl text-lg transition-all duration-250 shadow-lg hover:shadow-xl 
-                         hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold text-sm sm:text-base shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <span className="flex items-center gap-2">
-                <span className="text-2xl">+</span>
-                Nuovo Torneo
-              </span>
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+              <span>Nuovo Torneo</span>
             </button>
 
-            <label className="px-6 py-4 glass-card hover:bg-white/[0.1] text-slate-300 hover:text-white font-medium 
-                              rounded-xl text-base transition-all border border-white/10 active:scale-[0.98] 
-                              cursor-pointer flex items-center gap-2 shadow-md">
-              <span className="text-xl">📥</span>
+            <label className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 hover:text-white font-semibold text-sm transition-all active:scale-[0.98] cursor-pointer">
+              <Upload className="w-4 h-4 text-emerald-400" />
               <span>Importa JSON</span>
               <input
                 type="file"
@@ -112,114 +119,223 @@ export default function HomePage() {
               />
             </label>
           </div>
-        ) : (
-          <div className="glass-card-light p-6 w-full max-w-md animate-slide-up">
-            <h3 className="text-lg font-semibold mb-4">Crea Nuovo Torneo</h3>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              placeholder="Nome del torneo..."
-              autoFocus
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg 
-                         text-white placeholder-slate-400 outline-none focus:border-emerald-400 
-                         focus:ring-2 focus:ring-emerald-400/20 transition-all"
-            />
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleCreate}
-                className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white 
-                           font-semibold rounded-lg transition-colors cursor-pointer"
-              >
-                Crea Torneo
-              </button>
-              <button
-                onClick={() => {
-                  setShowNewForm(false);
-                  setNewName('');
-                }}
-                className="px-4 py-3 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                Annulla
-              </button>
+        </div>
+      </div>
+
+      {/* Modal / Card di Creazione Nuovo Torneo */}
+      {showNewForm && (
+        <div className="glass-card p-6 sm:p-8 border-emerald-500/30 bg-slate-900/90 animate-fade-in shadow-2xl relative">
+          <div className="max-w-md space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-white font-[var(--font-display)]">
+                Crea un nuovo Torneo
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                Dai un nome al torneo. Potrai configurare squadre, formula e montepremi nel passaggio successivo.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                placeholder="Es. Torneo d'Autunno 2026"
+                autoFocus
+                className="w-full px-4 py-3.5 glass-input text-base placeholder-slate-500"
+              />
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCreate}
+                  className="flex-1 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  Continua alla Configurazione
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNewForm(false);
+                    setNewName('');
+                  }}
+                  className="px-4 py-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white font-semibold text-sm transition-all cursor-pointer"
+                >
+                  Annulla
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {importError && (
-          <div className="p-3 bg-rose-500/20 border border-rose-500/30 rounded-lg text-rose-300 text-xs flex items-center gap-2">
-            <span>⚠️</span>
-            <span>{importError}</span>
+      {/* Import Error Banner */}
+      {importError && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm flex items-center gap-3 animate-fade-in">
+          <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+          <span>{importError}</span>
+        </div>
+      )}
+
+      {/* Griglia Tornei */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold text-white font-[var(--font-display)]">
+              I Tuoi Tornei
+            </h3>
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-400 border border-white/[0.08]">
+              {sortedTournaments.length}
+            </span>
+          </div>
+        </div>
+
+        {sortedTournaments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {sortedTournaments.map((t) => {
+              const completedRounds = t.rounds.filter((r) => r.completed).length;
+              const totalRounds = t.rounds.length || t.config.totalRounds;
+              const progressPct = totalRounds > 0 ? Math.round((completedRounds / totalRounds) * 100) : 0;
+
+              return (
+                <div
+                  key={t.id}
+                  onClick={() => handleOpen(t)}
+                  className="glass-card glass-card-interactive p-5 sm:p-6 flex flex-col justify-between gap-5 cursor-pointer group relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    {/* Header card con Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <FormatBadge format={t.config.format} />
+                      <StatusChip status={t.status} />
+                    </div>
+
+                    {/* Nome Torneo */}
+                    <div>
+                      <h4 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-1 font-[var(--font-display)]">
+                        {t.config.name}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Aggiornato {new Date(t.updatedAt).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+
+                    {/* Metriche Rapide */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/[0.06]">
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        <Users className="w-4 h-4 text-emerald-400/80 shrink-0" />
+                        <span><strong>{t.teams.length}</strong> Coppie</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        <Calendar className="w-4 h-4 text-emerald-400/80 shrink-0" />
+                        <span><strong>{completedRounds}/{totalRounds}</strong> Round</span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar Round */}
+                    {t.status !== 'setup' && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[11px] font-medium text-slate-400">
+                          <span>Avanzamento</span>
+                          <span className="text-emerald-400">{progressPct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Azioni Card */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      {t.status === 'setup' ? 'Configura Torneo' : 'Apri Dashboard'}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(t.id, t.config.name);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Elimina torneo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Empty State Moderno */
+          <div className="glass-card p-10 sm:p-14 text-center space-y-4 border-dashed border-white/10">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto text-emerald-400">
+              <Trophy className="w-8 h-8 stroke-[1.5]" />
+            </div>
+            <div className="max-w-md mx-auto space-y-1.5">
+              <h4 className="text-lg font-bold text-white font-[var(--font-display)]">
+                Nessun torneo presente
+              </h4>
+              <p className="text-sm text-slate-400">
+                Inizia creando un nuovo torneo oppure importa un backup in formato JSON per visualizzare incontri e classifiche.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowNewForm(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Crea il tuo Primo Torneo</span>
+            </button>
           </div>
         )}
       </div>
-
-      {/* Lista tornei */}
-      {sortedTournaments.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm uppercase tracking-widest text-slate-500 font-semibold px-1">
-            I tuoi tornei
-          </h3>
-          {sortedTournaments.map((t, index) => (
-            <div
-              key={t.id}
-              className="glass-card p-4 flex items-center justify-between gap-4 
-                         hover:bg-white/[0.08] transition-all cursor-pointer group"
-              style={{ animationDelay: `${index * 50}ms` }}
-              onClick={() => handleOpen(t.id)}
-            >
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
-                  {t.config.name}
-                </h4>
-                <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
-                  <span>{t.teams.length} coppie</span>
-                  <span>•</span>
-                  <span className="capitalize">
-                    {t.config.format === 'round-robin' && 'Round Robin'}
-                    {t.config.format === 'swiss' && 'Sistema Svizzero'}
-                    {t.config.format === 'knockout' && 'Eliminazione Diretta'}
-                    {t.config.format === 'groups-playoff' && 'Gironi + Playoff'}
-                  </span>
-                  <span>•</span>
-                  <StatusBadge status={t.status} />
-                </div>
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(t.id);
-                }}
-                className="p-2 text-slate-500 hover:text-rose-400 transition-colors 
-                           opacity-0 group-hover:opacity-100 cursor-pointer"
-                title="Elimina torneo"
-              >
-                🗑️
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {sortedTournaments.length === 0 && !showNewForm && (
-        <div className="text-center py-8 text-slate-500">
-          <p className="text-lg">Nessun torneo ancora.</p>
-          <p className="text-sm mt-1">Crea il tuo primo torneo!</p>
-        </div>
-      )}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const config = {
-    setup: { label: 'In preparazione', color: 'text-amber-400' },
-    'in-progress': { label: 'In corso', color: 'text-emerald-400' },
-    completed: { label: 'Completato', color: 'text-slate-400' },
-  }[status] ?? { label: status, color: 'text-slate-400' };
+function FormatBadge({ format }: { format: string }) {
+  const map: Record<string, { label: string; bg: string }> = {
+    'round-robin': { label: 'Round Robin', bg: 'bg-teal-500/10 text-teal-300 border-teal-500/20' },
+    swiss: { label: 'Svizzero', bg: 'bg-sky-500/10 text-sky-300 border-sky-500/20' },
+    knockout: { label: 'Eliminazione', bg: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
+    'groups-playoff': { label: 'Gironi + Playoff', bg: 'bg-purple-500/10 text-purple-300 border-purple-500/20' },
+  };
 
-  return <span className={`${config.color} text-xs font-medium`}>{config.label}</span>;
+  const item = map[format] ?? { label: format, bg: 'bg-slate-500/10 text-slate-300 border-slate-500/20' };
+
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${item.bg}`}>
+      {item.label}
+    </span>
+  );
+}
+
+function StatusChip({ status }: { status: string }) {
+  if (status === 'in-progress') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        In Corso
+      </span>
+    );
+  }
+  if (status === 'completed') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-500/15 text-slate-300 border border-slate-500/25">
+        <CheckCircle2 className="w-3 h-3 text-slate-400" />
+        Concluso
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25">
+      <Clock className="w-3 h-3 text-amber-400" />
+      Setup
+    </span>
+  );
 }
