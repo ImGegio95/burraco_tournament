@@ -22,6 +22,7 @@ import {
 import { confirmMatchResult, resetMatchResult } from '../services/scoringService';
 import { calculateStandings } from '../services/standingsService';
 import { saveTournament, loadTournaments } from '../services/storageService';
+import { generateAllRoundRobinRounds } from '../algorithms/roundRobin';
 
 // --- Stato ---
 
@@ -56,6 +57,7 @@ type TournamentAction =
   | { type: 'RESET_MATCH'; payload: { roundId: string; matchId: string } }
   | { type: 'RECALCULATE_STANDINGS' }
   | { type: 'START_TOURNAMENT' }
+  | { type: 'GENERATE_ROUNDS' }
   | { type: 'ADD_ROUND'; payload: Tournament['rounds'][0] };
 
 // --- Reducer ---
@@ -255,11 +257,35 @@ function tournamentReducer(
 
     case 'START_TOURNAMENT': {
       if (!state.currentTournament) return state;
+      let rounds = state.currentTournament.rounds;
+      if (state.currentTournament.config.format === 'round-robin') {
+        rounds = generateAllRoundRobinRounds(state.currentTournament);
+      }
+      const updated: Tournament = {
+        ...state.currentTournament,
+        status: 'in-progress',
+        rounds,
+      };
+      return {
+        ...state,
+        currentTournament: {
+          ...updated,
+          standings: calculateStandings(updated),
+        },
+      };
+    }
+
+    case 'GENERATE_ROUNDS': {
+      if (!state.currentTournament) return state;
+      let rounds = state.currentTournament.rounds;
+      if (state.currentTournament.config.format === 'round-robin') {
+        rounds = generateAllRoundRobinRounds(state.currentTournament);
+      }
       return {
         ...state,
         currentTournament: {
           ...state.currentTournament,
-          status: 'in-progress',
+          rounds,
         },
       };
     }
