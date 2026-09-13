@@ -66,7 +66,8 @@ export default function StandingsPage() {
     );
   };
 
-  const hasPrizes = config.prizePool !== null && config.prizePool > 0;
+  const prizeDist = config.prizeDistribution ?? [];
+  const hasPrizes = config.prizePool !== null && (config.prizePool ?? 0) > 0 && prizeDist.length > 0;
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -113,9 +114,9 @@ export default function StandingsPage() {
             </strong>{' '}
             ({getPlayerNames(getTeam(sortedStandings[0]?.teamId))})
           </p>
-          {hasPrizes && getPrizeForPosition(config.prizeDistribution, 1) && (
+          {hasPrizes && getPrizeForPosition(prizeDist, 1) && (
             <div className="inline-block mt-2 px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold">
-              💰 Primo Premio Assegnato: {formatCurrency(getPrizeForPosition(config.prizeDistribution, 1)!.amount)}
+              💰 Primo Premio Assegnato: {formatCurrency(getPrizeForPosition(prizeDist, 1)!.amount)}
             </div>
           )}
         </div>
@@ -136,7 +137,7 @@ export default function StandingsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            {config.prizeDistribution
+            {prizeDist
               .filter((p) => p.amount > 0)
               .map((p) => (
                 <span
@@ -156,7 +157,7 @@ export default function StandingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {top3.map((entry, idx) => {
             const team = getTeam(entry.teamId);
-            const prize = getPrizeForPosition(config.prizeDistribution, entry.position);
+            const prize = getPrizeForPosition(prizeDist, entry.position);
             const medals = ['🥇 1° Posto', '🥈 2° Posto', '🥉 3° Posto'];
             const borders = [
               'border-amber-400/50 bg-amber-400/10',
@@ -258,7 +259,7 @@ export default function StandingsPage() {
                   const isFirst = entry.position === 1;
                   const isSecond = entry.position === 2;
                   const isThird = entry.position === 3;
-                  const prize = getPrizeForPosition(config.prizeDistribution, entry.position);
+                  const prize = getPrizeForPosition(prizeDist, entry.position);
 
                   return (
                     <tr
